@@ -26,3 +26,7 @@ hosts::
 == Examples
 
 See the example.rb  recipe for examples
+
+= Author
+
+Jesse Nelson (via https://github.com/spheromak/cookbooks)
