@@ -35,6 +35,7 @@ def load_current_resource
     if data[0] == @new_resource.ip
       @hosts_exists = true
       @entries =  data.slice(1..-1)
+      Chef::Log.debug("Found existing hosts entry for #{@new_resource.ip} with entries:\n #{@entries.inspect}")
     end
   end
   file.close
@@ -42,8 +43,10 @@ end
 
 def cast_entries
   if @new_resource.entries.class == String
+    Chef::Log.debug("Cast host entries for #{@new_resource.ip} as: #{@new_resource.entries}")
     @new_resource.entries
   else
+    Chef::Log.debug("Cast host entries for #{@new_resource.ip} as: #{@new_resource.entries.join(" ")}")
     @new_resource.entries.join(" ")
   end
 end
@@ -56,6 +59,7 @@ action :create do
       data = line.split
       # current line = new resource (to be rewritten)
       if data[0] == @new_resource.ip
+        Chef::Log.debug("Requested hosts entry #{@new_resource.ip} differs from the existing entry, constructed the following new entry:\n  #{@new_resource.ip} #{cast_entries}")
         new_hosts << "#{@new_resource.ip} #{cast_entries}\n"       
         next
       end
@@ -66,6 +70,8 @@ action :create do
     unless @hosts_exists
       new_hosts << "#{@new_resource.ip} #{cast_entries}\n"       
     end
+
+    Chef::Log.debug("New hosts file constructed: \n #{new_hosts}")
 
     # create the file
     write_hosts(new_hosts)
@@ -83,9 +89,13 @@ action :remove do
     @orig_file.each_line do |line|
       data = line.split
       # skip it if were removing
-      next if data[0] == @new_resource.ip
+      if data[0] == @new_resource.ip
+        Chef::Log.debug("Removing the following hosts entry because it matched #{@new_resource.ip} with action remove: \n" + data.join(" "))
+        next
+      end
       new_hosts << line
     end
+    Chef::Log.debug("New hosts file constructed: \n #{new_hosts}")
     write_hosts(new_hosts)
     @new_resource.updated_by_last_action(true)
   end
